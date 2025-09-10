@@ -224,6 +224,67 @@ export function Navigation() {
               isOpen={openDropdown === 'resources'}
               toggle={() => toggleDropdown('resources')}
             />
+            
+            {/* Quick Actions */}
+            <div className="flex items-center space-x-2 ml-4">
+              <Link
+                href="/model-cards/create"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 flex items-center space-x-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                <span>Create Model Card</span>
+              </Link>
+              
+              <Link
+                href="/fairness-assessments"
+                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 flex items-center space-x-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                <span>Fairness Test</span>
+              </Link>
+            </div>
+            
+            {/* User Account */}
+            <div className="flex items-center ml-4">
+              <div className="relative">
+                <button
+                  onClick={() => toggleDropdown('user')}
+                  className="flex items-center space-x-2 text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 hover:bg-gray-50"
+                >
+                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                    <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                  </div>
+                  <span className="hidden md:block">Account</span>
+                  <svg className={`w-4 h-4 transform transition-transform ${openDropdown === 'user' ? 'rotate-180' : ''} text-gray-400`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                
+                {openDropdown === 'user' && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50">
+                    <Link href="/profile" className="block px-4 py-2 hover:bg-gray-50 text-sm text-gray-700">
+                      Profile Settings
+                    </Link>
+                    <Link href="/billing" className="block px-4 py-2 hover:bg-gray-50 text-sm text-gray-700">
+                      Billing
+                    </Link>
+                    <Link href="/api-keys" className="block px-4 py-2 hover:bg-gray-50 text-sm text-gray-700">
+                      API Keys
+                    </Link>
+                    <hr className="my-2" />
+                    <Link href="/logout" className="block px-4 py-2 hover:bg-gray-50 text-sm text-red-600">
+                      Sign Out
+                    </Link>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
 
           {/* Mobile & Tablet Navigation */}
