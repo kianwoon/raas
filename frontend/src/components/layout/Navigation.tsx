@@ -9,7 +9,48 @@ export function Navigation() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState<{name?: string, email?: string} | null>(null);
   const navRef = useRef<HTMLDivElement>(null);
+
+  // Check authentication state from localStorage on mount and when it changes
+  useEffect(() => {
+    const checkAuthState = () => {
+      const authStatus = localStorage.getItem('isAuthenticated');
+      const userData = localStorage.getItem('user');
+      
+      setIsAuthenticated(authStatus === 'true');
+      if (userData && authStatus === 'true') {
+        try {
+          setUser(JSON.parse(userData));
+        } catch (error) {
+          console.error('Error parsing user data:', error);
+          setUser(null);
+        }
+      } else {
+        setUser(null);
+      }
+    };
+
+    // Check initial auth state
+    checkAuthState();
+
+    // Listen for storage changes (for cross-tab sync)
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key === 'isAuthenticated' || event.key === 'user') {
+        checkAuthState();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Custom event for same-tab sync
+    window.addEventListener('authStateChange', checkAuthState);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('authStateChange', checkAuthState);
+    };
+  }, []);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -143,13 +184,19 @@ export function Navigation() {
       if (authMode === 'register') {
         console.log('Registering user:', { email, name });
         // Simulate successful registration
+        localStorage.setItem('isAuthenticated', 'true');
+        localStorage.setItem('user', JSON.stringify({ email, name }));
         setIsAuthenticated(true);
         setShowAuthModal(false);
+        window.dispatchEvent(new Event('authStateChange'));
       } else {
         console.log('Logging in user:', { email });
         // Simulate successful login
+        localStorage.setItem('isAuthenticated', 'true');
+        localStorage.setItem('user', JSON.stringify({ email }));
         setIsAuthenticated(true);
         setShowAuthModal(false);
+        window.dispatchEvent(new Event('authStateChange'));
       }
     } catch (error) {
       console.error('Authentication error:', error);
@@ -188,8 +235,11 @@ export function Navigation() {
       
       // Simulate successful GitHub sign-in
       setTimeout(() => {
+        localStorage.setItem('isAuthenticated', 'true');
+        localStorage.setItem('user', JSON.stringify({ email: 'user@example.com', name: 'GitHub User' }));
         setIsAuthenticated(true);
         setShowAuthModal(false);
+        window.dispatchEvent(new Event('authStateChange'));
         console.log('Successfully signed in with GitHub');
       }, 1000);
       
@@ -328,7 +378,7 @@ export function Navigation() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                       </svg>
                     </div>
-                    <span className="hidden md:block">Account</span>
+                    <span className="hidden md:block">{user?.name?.split(' ')[0] || user?.email?.split('@')[0] || 'Account'}</span>
                     <svg className={`w-4 h-4 transform transition-transform ${openDropdown === 'user' ? 'rotate-180' : ''} text-gray-400`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
@@ -348,8 +398,14 @@ export function Navigation() {
                       <hr className="my-2" />
                       <button 
                         onClick={() => {
+                          localStorage.removeItem('isAuthenticated');
+                          localStorage.removeItem('access_token');
+                          localStorage.removeItem('refresh_token');
+                          localStorage.removeItem('user');
                           setIsAuthenticated(false);
+                          setUser(null);
                           setOpenDropdown(null);
+                          window.dispatchEvent(new Event('authStateChange'));
                         }}
                         className="block w-full text-left px-4 py-2 hover:bg-gray-50 text-sm text-red-600"
                       >

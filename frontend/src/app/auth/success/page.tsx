@@ -36,6 +36,9 @@ export default function AuthSuccessPage() {
           picture
         }));
         
+        // Dispatch event to update UI components
+        window.dispatchEvent(new Event('authStateChange'));
+        
         setStatus('success');
         
         // Redirect to home page after successful authentication

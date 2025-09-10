@@ -50,6 +50,9 @@ export default function AuthCallbackPage() {
         localStorage.setItem('isAuthenticated', 'true');
         localStorage.setItem('user', JSON.stringify(data.user));
         
+        // Dispatch event to update UI components
+        window.dispatchEvent(new Event('authStateChange'));
+        
         setStatus('success');
         setTokens(data);
         
