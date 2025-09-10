@@ -1,0 +1,155 @@
+<svg width="800" height="500" viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Gradients for visual appeal -->
+    <linearGradient id="dataGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:0.9" />
+      <stop offset="100%" style="stop-color:#1e40af;stop-opacity:1" />
+    </linearGradient>
+    
+    <linearGradient id="modelGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#10b981;stop-opacity:0.9" />
+      <stop offset="100%" style="stop-color:#059669;stop-opacity:1" />
+    </linearGradient>
+    
+    <linearGradient id="assessmentGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f59e0b;stop-opacity:0.9" />
+      <stop offset="100%" style="stop-color:#d97706;stop-opacity:1" />
+    </linearGradient>
+    
+    <linearGradient id="complianceGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ef4444;stop-opacity:0.9" />
+      <stop offset="100%" style="stop-color:#dc2626;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Arrow marker -->
+    <marker id="arrow" markerWidth="12" markerHeight="10" refX="11" refY="5" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,10 L12,5 z" fill="#6b7280"/>
+    </marker>
+    
+    <!-- Drop shadow filter -->
+    <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="2" dy="2" stdDeviation="3" flood-color="#000000" flood-opacity="0.1"/>
+    </filter>
+  </defs>
+  
+  <!-- Title -->
+  <text x="400" y="40" text-anchor="middle" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="#1e40af">
+    RAI Platform Workflow
+  </text>
+  <text x="400" y="65" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" fill="#6b7280">
+    From Data Ingestion to Compliance Assurance
+  </text>
+  
+  <!-- Step 1: Data Ingestion -->
+  <g transform="translate(100, 150)">
+    <rect x="-80" y="-40" width="160" height="80" rx="12" fill="url(#dataGradient)" filter="url(#shadow)"/>
+    <text x="0" y="-15" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="white">Data Ingestion</text>
+    <text x="0" y="5" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="white">Upload &amp; Process</text>
+    <text x="0" y="20" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="white">Datasets</text>
+    
+    <!-- Icon -->
+    <g transform="translate(0, -60)">
+      <circle cx="0" cy="0" r="20" fill="#3b82f6" opacity="0.2"/>
+      <path d="M -8,-8 L 8,-8 L 8,8 L -8,8 Z M -4,-4 L 4,-4 M -4,0 L 4,0 M -4,4 L 4,4" stroke="#3b82f6" stroke-width="2" fill="none"/>
+    </g>
+  </g>
+  
+  <!-- Arrow 1 -->
+  <line x1="180" y1="150" x2="250" y2="150" stroke="#6b7280" stroke-width="3" marker-end="url(#arrow)"/>
+  
+  <!-- Step 2: Model Cards -->
+  <g transform="translate(320, 150)">
+    <rect x="-80" y="-40" width="160" height="80" rx="12" fill="url(#modelGradient)" filter="url(#shadow)"/>
+    <text x="0" y="-15" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="white">Model Cards</text>
+    <text x="0" y="5" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="white">Documentation &amp;</text>
+    <text x="0" y="20" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="white">Metadata</text>
+    
+    <!-- Icon -->
+    <g transform="translate(0, -60)">
+      <circle cx="0" cy="0" r="20" fill="#10b981" opacity="0.2"/>
+      <rect x="-10" y="-8" width="20" height="16" rx="2" stroke="#10b981" stroke-width="2" fill="none"/>
+      <line x1="-6" y1="-4" x2="6" y2="-4" stroke="#10b981" stroke-width="1.5"/>
+      <line x1="-6" y1="0" x2="6" y2="0" stroke="#10b981" stroke-width="1.5"/>
+      <line x1="-6" y1="4" x2="6" y2="4" stroke="#10b981" stroke-width="1.5"/>
+    </g>
+  </g>
+  
+  <!-- Arrow 2 -->
+  <line x1="400" y1="150" x2="470" y2="150" stroke="#6b7280" stroke-width="3" marker-end="url(#arrow)"/>
+  
+  <!-- Step 3: Fairness Assessment -->
+  <g transform="translate(540, 150)">
+    <rect x="-80" y="-40" width="160" height="80" rx="12" fill="url(#assessmentGradient)" filter="url(#shadow)"/>
+    <text x="0" y="-15" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="white">Fairness</text>
+    <text x="0" y="5" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="white">Assessment &amp;</text>
+    <text x="0" y="20" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="white">Diagnostics</text>
+    
+    <!-- Icon -->
+    <g transform="translate(0, -60)">
+      <circle cx="0" cy="0" r="20" fill="#f59e0b" opacity="0.2"/>
+      <path d="M -8,0 Q 0,-8 8,0 Q 0,8 -8,0" fill="none" stroke="#f59e0b" stroke-width="2"/>
+      <circle cx="0" cy="0" r="3" fill="#f59e0b"/>
+    </g>
+  </g>
+  
+  <!-- Arrow 3 -->
+  <line x1="620" y1="150" x2="690" y2="150" stroke="#6b7280" stroke-width="3" marker-end="url(#arrow)"/>
+  
+  <!-- Step 4: Compliance -->
+  <g transform="translate(720, 150)">
+    <rect x="-80" y="-40" width="160" height="80" rx="12" fill="url(#complianceGradient)" filter="url(#shadow)"/>
+    <text x="0" y="-15" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="white">Compliance</text>
+    <text x="0" y="5" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="white">Framework &amp;</text>
+    <text x="0" y="20" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="white">Governance</text>
+    
+    <!-- Icon -->
+    <g transform="translate(0, -60)">
+      <circle cx="0" cy="0" r="20" fill="#ef4444" opacity="0.2"/>
+      <path d="M -10,-5 L -10,5 L -5,10 L 5,10 L 10,5 L 10,-5 L 5,-10 L -5,-10 Z" stroke="#ef4444" stroke-width="2" fill="none"/>
+      <path d="M -6,-2 L -2,2 L 6,-6" stroke="#ef4444" stroke-width="2" fill="none"/>
+    </g>
+  </g>
+  
+  <!-- Key Features Section -->
+  <g transform="translate(400, 280)">
+    <text x="0" y="0" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#1e40af">
+      Key Features
+    </text>
+    
+    <!-- Feature boxes -->
+    <g transform="translate(-300, 40)">
+      <rect x="0" y="0" width="140" height="60" rx="8" fill="#f0f9ff" stroke="#3b82f6" stroke-width="1"/>
+      <text x="70" y="25" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#1e40af">Real-time</text>
+      <text x="70" y="40" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#1e40af">Processing</text>
+    </g>
+    
+    <g transform="translate(-150, 40)">
+      <rect x="0" y="0" width="140" height="60" rx="8" fill="#f0fdf4" stroke="#10b981" stroke-width="1"/>
+      <text x="70" y="25" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#059669">Automated</text>
+      <text x="70" y="40" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#059669">Assessments</text>
+    </g>
+    
+    <g transform="translate(0, 40)">
+      <rect x="0" y="0" width="140" height="60" rx="8" fill="#fffbeb" stroke="#f59e0b" stroke-width="1"/>
+      <text x="70" y="25" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#d97706">Comprehensive</text>
+      <text x="70" y="40" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#d97706">Reporting</text>
+    </g>
+    
+    <g transform="translate(150, 40)">
+      <rect x="0" y="0" width="140" height="60" rx="8" fill="#fef2f2" stroke="#ef4444" stroke-width="1"/>
+      <text x="70" y="25" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#dc2626">Regulatory</text>
+      <text x="70" y="40" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#dc2626">Compliance</text>
+    </g>
+  </g>
+  
+  <!-- Bottom call to action -->
+  <g transform="translate(400, 420)">
+    <rect x="-150" y="-25" width="300" height="50" rx="25" fill="#3b82f6" opacity="0.1"/>
+    <text x="0" y="-5" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#1e40af">
+      Get Started with Responsible AI
+    </text>
+    <text x="0" y="12" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#6b7280">
+      Transparent • Accountable • Fair
+    </text>
+  </g>
+</svg>

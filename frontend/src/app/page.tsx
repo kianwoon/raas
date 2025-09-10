@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { HeroSection } from '@/components/landing-page/HeroSection';
+import { WorkflowSection } from '@/components/landing-page/WorkflowSection';
 import { FeaturedModelCards } from '@/components/landing-page/FeaturedModelCards';
 import { FairnessScorecards } from '@/components/landing-page/FairnessScorecards';
 import { EducationalContentHub } from '@/components/landing-page/EducationalContentHub';
@@ -89,6 +90,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
       <HeroSection />
+      <WorkflowSection />
       
       <div className="container mx-auto px-4 py-12">
         <FeaturedModelCards modelCards={modelCards} />
