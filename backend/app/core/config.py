@@ -78,7 +78,8 @@ class Settings(BaseSettings):
     
     # File Upload
     MAX_FILE_SIZE: int = 100 * 1024 * 1024  # 100MB
-    ALLOWED_FILE_TYPES: List[str] = ["pdf", "doc", "docx", "txt", "csv", "json", "png", "jpg", "jpeg"]
+    ALLOWED_FILE_TYPES: List[str] = ["pdf", "doc", "docx", "txt", "csv", "json", "png", "jpg", "jpeg", "parquet", "pkl", "pickle", "onnx"]
+    MAX_MODEL_FILE_SIZE: int = 500 * 1024 * 1024  # 500MB for model files
     
     # Pagination
     DEFAULT_PAGE_SIZE: int = 20

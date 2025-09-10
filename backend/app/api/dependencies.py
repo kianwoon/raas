@@ -8,6 +8,7 @@ import structlog
 from app.core.config import settings
 from app.core.database import get_db
 from app.models.user import User
+from app.models.organization import Organization
 from app.schemas.user import User as UserSchema
 from app.services.auth_service import AuthService
 
@@ -97,6 +98,30 @@ require_auditor = RoleChecker(["auditor", "admin"])
 require_executive = RoleChecker(["executive", "admin"])
 require_regulator = RoleChecker(["regulator", "admin"])
 require_admin = RoleChecker(["admin"])
+
+
+async def get_current_organization(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> Organization:
+    """Get current user's organization."""
+    if not current_user.organization_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User does not belong to any organization"
+        )
+    
+    from sqlalchemy import select
+    result = await db.execute(select(Organization).where(Organization.id == current_user.organization_id))
+    organization = result.scalar_one_or_none()
+    
+    if not organization:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Organization not found"
+        )
+    
+    return organization
 
 
 async def get_pagination_params(

@@ -1,3 +1,6 @@
 {
-    "editor.fontFamily": "Fira Sans, Monaco, 'Courier New', monospace"
+    "editor.fontFamily": "Raleway, Monaco, 'Courier New', monospace",
+    "editor.codeLensFontFamily": "Raleway",
+    "apc.font.family": "Raleway",
+    "apc.monospace.font.family": "Raleway"
 }

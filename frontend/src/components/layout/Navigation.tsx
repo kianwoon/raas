@@ -9,6 +9,10 @@ export function Navigation() {
   const navigation = [
     { name: 'Home', href: '/' },
     { name: 'Model Cards', href: '/model-cards' },
+    { name: 'Fairness Assessments', href: '/fairness-assessments' },
+    { name: 'Diagnostics', href: '/diagnostics' },
+    { name: 'Data Ingestion', href: '/data-ingestion' },
+    { name: 'Job Monitoring', href: '/jobs' },
     { name: 'Compliance Frameworks', href: '/compliance-frameworks' },
     { name: 'Resources', href: '/resources' },
     { name: 'About', href: '/about' },
@@ -21,9 +25,11 @@ export function Navigation() {
           {/* Logo and Brand */}
           <div className="flex items-center">
             <Link href="/" className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">RAI</span>
-              </div>
+              <img 
+                src="/logo.svg" 
+                alt="RAI Platform Logo" 
+                className="w-12 h-12"
+              />
               <div className="hidden sm:block">
                 <h1 className="text-lg font-semibold text-gray-900">RAI Platform</h1>
                 <p className="text-xs text-gray-500">Responsible AI Transparency</p>

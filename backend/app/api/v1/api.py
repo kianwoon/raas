@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from backend.app.api.v1 import model_cards, compliance_frameworks, landing_page
+from backend.app.api.v1 import model_cards, compliance_frameworks, landing_page, data_ingestion
 
 api_router = APIRouter()
 
@@ -20,4 +20,10 @@ api_router.include_router(
     landing_page.router,
     prefix="/landing-page",
     tags=["landing-page"]
+)
+
+api_router.include_router(
+    data_ingestion.router,
+    prefix="/data-ingestion",
+    tags=["data-ingestion"]
 )

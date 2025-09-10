@@ -11,7 +11,13 @@
       "Bash(find:*)",
       "WebSearch",
       "Bash(node:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(tree:*)",
+      "Bash(env:*)",
+      "Bash(open http://localhost:3001)",
+      "Bash(open:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npm install:*)"
     ],
     "deny": [],
     "ask": []
