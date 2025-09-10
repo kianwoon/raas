@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python:*)",
+      "Bash(pip install:*)",
+      "Bash(PYTHONPATH=/Users/kianwoonwong/Downloads/raas/backend python app/cli.py init-db:*)",
+      "Bash(docker:*)",
+      "Bash(lsof:*)",
+      "Bash(PYTHONPATH=/Users/kianwoonwong/Downloads/raas/backend python:*)",
+      "Bash(curl:*)",
+      "Bash(find:*)",
+      "WebSearch",
+      "Bash(node:*)",
+      "Bash(npm run build:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

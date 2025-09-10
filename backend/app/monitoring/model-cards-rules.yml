@@ -1,0 +1,92 @@
+groups:
+  - name: model-cards-api
+    rules:
+      # Alert for high error rate
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status=~"5..", job="model-cards-api"}[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High error rate detected in Model Cards API"
+          description: "Model Cards API has an error rate of {{ $value }} errors per second over the last 5 minutes."
+
+      # Alert for high latency
+      - alert: HighLatency
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job="model-cards-api"}[5m])) > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High latency detected in Model Cards API"
+          description: "95th percentile latency for Model Cards API is {{ $value }} seconds over the last 5 minutes."
+
+      # Alert for high memory usage
+      - alert: HighMemoryUsage
+        expr: (container_memory_usage_bytes{container="model-cards-api"} / container_spec_memory_limit_bytes{container="model-cards-api"}) > 0.9
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage detected in Model Cards API"
+          description: "Model Cards API is using {{ $value | humanizePercentage }} of its allocated memory."
+
+      # Alert for high CPU usage
+      - alert: HighCPUUsage
+        expr: (rate(container_cpu_usage_seconds_total{container="model-cards-api"}[5m]) / container_spec_cpu_quota{container="model-cards-api"} * container_spec_cpu_period{container="model-cards-api"}) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage detected in Model Cards API"
+          description: "Model Cards API is using {{ $value | humanizePercentage }} of its allocated CPU."
+
+      # Alert for database connection errors
+      - alert: DatabaseConnectionErrors
+        expr: rate(database_errors_total{job="model-cards-api"}[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Database connection errors detected in Model Cards API"
+          description: "Model Cards API is experiencing {{ $value }} database errors per second over the last 5 minutes."
+
+      # Alert for low number of active model cards
+      - alert: LowActiveModelCards
+        expr: model_cards_total{status="approved"} < 5
+        for: 10m
+        labels:
+          severity: info
+        annotations:
+          summary: "Low number of active model cards"
+          description: "Only {{ $value }} approved model cards are available in the system."
+
+      # Alert for high number of pending review model cards
+      - alert: HighPendingReviewModelCards
+        expr: model_cards_total{status="pending_review"} > 10
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High number of model cards pending review"
+          description: "{{ $value }} model cards are pending review and require attention."
+
+      # Alert for low average fairness score
+      - alert: LowAverageFairnessScore
+        expr: avg(model_card_fairness_score) < 0.6
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low average fairness score detected"
+          description: "The average fairness score across all model cards is {{ $value }}, which is below the recommended threshold."
+
+      # Alert for high number of critical risk model cards
+      - alert: HighCriticalRiskModelCards
+        expr: model_cards_total{risk_tier="critical"} > 5
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High number of critical risk model cards"
+          description: "{{ $value }} model cards are classified as critical risk and require immediate attention."
