@@ -9,7 +9,7 @@ from sqlalchemy import select
 import structlog
 
 from app.core.config import settings
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.schemas.user import UserCreate, Token, User as UserSchema
 
 logger = structlog.get_logger()
@@ -177,3 +177,80 @@ class AuthService:
         """Get user by username."""
         result = await self.db.execute(select(User).where(User.username == username))
         return result.scalar_one_or_none()
+    
+    async def create_or_update_oauth_user(self, user_data: dict, provider: str = "google") -> User:
+        """Create or update user from OAuth provider."""
+        email = user_data.get("email")
+        if not email:
+            raise ValueError("Email is required for OAuth users")
+        
+        # Check if user exists
+        user = await self.get_user_by_email(email)
+        
+        if user:
+            # Update existing user
+            update_data = {
+                "full_name": user_data.get("name", user.full_name),
+                "avatar_url": user_data.get("picture", user.avatar_url),
+                "is_verified": True,  # OAuth users are verified
+                "is_active": True
+            }
+            
+            for field, value in update_data.items():
+                if value is not None:
+                    setattr(user, field, value)
+            
+            await self.db.commit()
+            await self.db.refresh(user)
+            logger.info("OAuth user updated", user_id=str(user.id), provider=provider)
+        else:
+            # Create new user
+            username = email.split("@")[0]
+            counter = 1
+            original_username = username
+            
+            # Ensure unique username
+            while await self.get_user_by_username(username):
+                username = f"{original_username}_{counter}"
+                counter += 1
+            
+            user = User(
+                email=email,
+                username=username,
+                full_name=user_data.get("name", ""),
+                hashed_password="",  # OAuth users don't have passwords
+                role="model_owner",  # Default role as string
+                avatar_url=user_data.get("picture"),
+                is_verified=True,
+                is_active=True,
+                provider=provider,
+                provider_id=user_data.get("sub")  # Google's unique user ID
+            )
+            
+            self.db.add(user)
+            await self.db.commit()
+            await self.db.refresh(user)
+            logger.info("OAuth user created", user_id=str(user.id), provider=provider)
+        
+        return user
+    
+    async def authenticate_oauth_user(self, user_data: dict, provider: str = "google") -> Optional[Token]:
+        """Authenticate OAuth user and return tokens."""
+        try:
+            # Create or update user
+            user = await self.create_or_update_oauth_user(user_data, provider)
+            
+            # Create tokens
+            access_token = self.create_access_token(data={"sub": str(user.id)})
+            refresh_token = self.create_refresh_token(data={"sub": str(user.id)})
+            
+            return Token(
+                access_token=access_token,
+                refresh_token=refresh_token,
+                token_type="bearer",
+                expires_in=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
+            )
+            
+        except Exception as e:
+            logger.error("OAuth authentication failed", error=str(e))
+            return None

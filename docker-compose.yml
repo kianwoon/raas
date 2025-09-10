@@ -75,7 +75,7 @@ services:
       dockerfile: Dockerfile
     container_name: raas-web
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - NEXT_PUBLIC_API_URL=http://host.docker.internal:8000
       - NEXT_PUBLIC_ENVIRONMENT=development
       - CHOKIDAR_USEPOLLING=true
       - WATCHPACK_POLLING=true

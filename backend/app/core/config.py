@@ -50,6 +50,11 @@ class Settings(BaseSettings):
     OIDC_AUTHORITY: Optional[str] = None
     OIDC_REDIRECT_URI: Optional[str] = "http://localhost:8000/api/v1/auth/callback"
     
+    # Google OAuth
+    GOOGLE_CLIENT_ID: Optional[str] = None
+    GOOGLE_CLIENT_SECRET: Optional[str] = None
+    GOOGLE_REDIRECT_URI: Optional[str] = "http://localhost:8000/api/v1/auth/google/callback"
+    
     # File Storage
     MINIO_ENDPOINT: str = "localhost:9000"
     MINIO_ACCESS_KEY: str = "minioadmin"
