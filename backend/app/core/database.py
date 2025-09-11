@@ -46,15 +46,15 @@ Base = declarative_base()
 
 async def get_db() -> AsyncSession:
     """Get database session."""
-    async with AsyncSessionLocal() as session:
-        try:
-            yield session
-        except Exception as e:
-            logger.error("Database session error", error=str(e))
-            await session.rollback()
-            raise
-        finally:
-            await session.close()
+    session = AsyncSessionLocal()
+    try:
+        yield session
+    except Exception as e:
+        logger.error("Database session error", error=str(e), exc_info=True)
+        await session.rollback()
+        raise
+    finally:
+        await session.close()
 
 async def init_db():
     """Initialize database tables."""

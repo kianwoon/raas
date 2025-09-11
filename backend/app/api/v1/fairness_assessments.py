@@ -1,6 +1,6 @@
 from typing import List, Optional, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, status, Query, Body
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
 from app.api.dependencies import get_db, get_current_user, get_current_organization
 from app.models.user import User
@@ -29,16 +29,16 @@ logger = structlog.get_logger()
 router = APIRouter()
 
 @router.post("/fairness-assessments", response_model=FairnessAssessmentResponse, status_code=status.HTTP_201_CREATED)
-def create_fairness_assessment(
+async def create_fairness_assessment(
     assessment_data: FairnessAssessmentCreate,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
     current_organization: Organization = Depends(get_current_organization)
 ):
     """Create a new fairness assessment."""
     try:
         service = FairnessAssessmentService()
-        assessment = service.create_assessment(db, assessment_data, current_user.id, current_organization.id)
+        assessment = await service.create_assessment(db, assessment_data, current_user.id, current_organization.id)
         return FairnessAssessmentResponse.from_orm(assessment)
     except Exception as e:
         logger.error(f"Failed to create fairness assessment: {e}", exc_info=True)
@@ -48,13 +48,13 @@ def create_fairness_assessment(
         )
 
 @router.get("/fairness-assessments", response_model=FairnessAssessmentListResponse)
-def get_fairness_assessments(
+async def get_fairness_assessments(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
     status: Optional[FairnessAssessmentStatus] = Query(None, description="Filter by status"),
     sort_by: str = Query("created_at", description="Sort field"),
     sort_desc: bool = Query(True, description="Sort descending"),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
     current_organization: Organization = Depends(get_current_organization)
 ):
@@ -63,7 +63,7 @@ def get_fairness_assessments(
         service = FairnessAssessmentService()
         
         # Get assessments
-        assessments = service.get_assessments(
+        assessments = await service.get_assessments(
             db=db,
             user_id=current_user.id,
             organization_id=current_organization.id,
@@ -75,7 +75,7 @@ def get_fairness_assessments(
         )
         
         # Get total count
-        total = service.count_assessments(
+        total = await service.count_assessments(
             db=db,
             user_id=current_user.id,
             organization_id=current_organization.id,
@@ -99,9 +99,9 @@ def get_fairness_assessments(
         )
 
 @router.get("/fairness-assessments/{assessment_id}", response_model=FairnessAssessmentResponse)
-def get_fairness_assessment(
+async def get_fairness_assessment(
     assessment_id: UUID,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
     current_organization: Organization = Depends(get_current_organization)
 ):
@@ -134,10 +134,10 @@ def get_fairness_assessment(
         )
 
 @router.put("/fairness-assessments/{assessment_id}", response_model=FairnessAssessmentResponse)
-def update_fairness_assessment(
+async def update_fairness_assessment(
     assessment_id: UUID,
     assessment_data: FairnessAssessmentUpdate,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
     current_organization: Organization = Depends(get_current_organization)
 ):
@@ -177,9 +177,9 @@ def update_fairness_assessment(
         )
 
 @router.delete("/fairness-assessments/{assessment_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_fairness_assessment(
+async def delete_fairness_assessment(
     assessment_id: UUID,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
     current_organization: Organization = Depends(get_current_organization)
 ):
@@ -217,10 +217,10 @@ def delete_fairness_assessment(
         )
 
 @router.post("/fairness-assessments/{assessment_id}/execute", response_model=FairnessAssessmentResponse)
-def execute_fairness_assessment(
+async def execute_fairness_assessment(
     assessment_id: UUID,
     execution_request: FairnessAssessmentExecutionRequest = Body(None),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
     current_organization: Organization = Depends(get_current_organization)
 ):
@@ -265,9 +265,9 @@ def execute_fairness_assessment(
         )
 
 @router.post("/fairness-assessments/wizard", response_model=FairnessAssessmentWizardResponse)
-def process_wizard_step(
+async def process_wizard_step(
     wizard_data: FairnessAssessmentConfigurationWizard,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
     current_organization: Organization = Depends(get_current_organization)
 ):
@@ -292,10 +292,10 @@ def process_wizard_step(
         )
 
 @router.post("/fairness-assessments/{assessment_id}/reports", response_model=FairnessReportResponse)
-def generate_fairness_report(
+async def generate_fairness_report(
     assessment_id: UUID,
     report_request: FairnessReportRequest,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
     current_organization: Organization = Depends(get_current_organization)
 ):
@@ -345,9 +345,9 @@ def generate_fairness_report(
         )
 
 @router.get("/fairness-assessments/{assessment_id}/visualizations")
-def get_fairness_visualizations(
+async def get_fairness_visualizations(
     assessment_id: UUID,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
     current_organization: Organization = Depends(get_current_organization)
 ):
@@ -392,9 +392,9 @@ def get_fairness_visualizations(
         )
 
 @router.get("/fairness-assessments/{assessment_id}/metrics")
-def get_fairness_metrics(
+async def get_fairness_metrics(
     assessment_id: UUID,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
     current_organization: Organization = Depends(get_current_organization)
 ):
@@ -459,9 +459,9 @@ def get_fairness_metrics(
         )
 
 @router.post("/fairness-assessments/compare", response_model=FairnessComparisonResponse)
-def compare_fairness_assessments(
+async def compare_fairness_assessments(
     assessment_ids: List[UUID] = Body(..., description="List of assessment IDs to compare"),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
     current_organization: Organization = Depends(get_current_organization)
 ):
@@ -563,8 +563,8 @@ def compare_fairness_assessments(
         )
 
 @router.get("/fairness-assessments/statistics")
-def get_fairness_assessment_statistics(
-    db: Session = Depends(get_db),
+async def get_fairness_assessment_statistics(
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
     current_organization: Organization = Depends(get_current_organization)
 ):

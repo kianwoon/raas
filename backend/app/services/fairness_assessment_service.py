@@ -1,8 +1,8 @@
 from typing import List, Optional, Dict, Any
 from uuid import UUID
 from datetime import datetime
-from sqlalchemy.orm import Session
-from sqlalchemy import and_, or_, desc
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import and_, or_, desc, select
 import json
 import structlog
 
@@ -36,7 +36,7 @@ class FairnessAssessmentService:
     def __init__(self):
         self.job_service = JobService()
     
-    def create_assessment(self, db: Session, assessment_data: FairnessAssessmentCreate, user_id: UUID, organization_id: UUID) -> FairnessAssessment:
+    async def create_assessment(self, db: AsyncSession, assessment_data: FairnessAssessmentCreate, user_id: UUID, organization_id: UUID) -> FairnessAssessment:
         """Create a new fairness assessment."""
         # Convert Pydantic models to JSON-compatible dictionaries
         protected_attributes = [attr.dict() for attr in assessment_data.protected_attributes]
@@ -50,20 +50,21 @@ class FairnessAssessmentService:
             organization_id=organization_id
         )
         
-        db.add(assessment)
-        db.commit()
-        db.refresh(assessment)
+        await db.add(assessment)
+        await db.commit()
+        await db.refresh(assessment)
         
         logger.info(f"Created fairness assessment {assessment.id}")
         return assessment
     
-    def get_assessment(self, db: Session, assessment_id: UUID) -> Optional[FairnessAssessment]:
+    async def get_assessment(self, db: AsyncSession, assessment_id: UUID) -> Optional[FairnessAssessment]:
         """Get a fairness assessment by ID."""
-        return db.query(FairnessAssessment).filter(FairnessAssessment.id == assessment_id).first()
+        result = await db.execute(select(FairnessAssessment).where(FairnessAssessment.id == assessment_id))
+        return result.scalar_one_or_none()
     
-    def get_assessments(
+    async def get_assessments(
         self,
-        db: Session,
+        db: AsyncSession,
         user_id: Optional[UUID] = None,
         organization_id: Optional[UUID] = None,
         status: Optional[FairnessAssessmentStatus] = None,
@@ -73,44 +74,50 @@ class FairnessAssessmentService:
         sort_desc: bool = True
     ) -> List[FairnessAssessment]:
         """Get fairness assessments with filtering."""
-        query = db.query(FairnessAssessment)
+        query = select(FairnessAssessment)
         
         if user_id:
-            query = query.filter(FairnessAssessment.created_by == user_id)
+            query = query.where(FairnessAssessment.created_by == user_id)
         if organization_id:
-            query = query.filter(FairnessAssessment.organization_id == organization_id)
+            query = query.where(FairnessAssessment.organization_id == organization_id)
         if status:
-            query = query.filter(FairnessAssessment.status == status)
+            query = query.where(FairnessAssessment.status == status)
         
         if sort_desc:
             query = query.order_by(desc(getattr(FairnessAssessment, sort_by)))
         else:
             query = query.order_by(getattr(FairnessAssessment, sort_by))
         
-        return query.offset(skip).limit(limit).all()
+        query = query.offset(skip).limit(limit)
+        result = await db.execute(query)
+        return result.scalars().all()
     
-    def count_assessments(
+    async def count_assessments(
         self,
-        db: Session,
+        db: AsyncSession,
         user_id: Optional[UUID] = None,
         organization_id: Optional[UUID] = None,
         status: Optional[FairnessAssessmentStatus] = None
     ) -> int:
         """Count fairness assessments."""
-        query = db.query(FairnessAssessment)
+        from sqlalchemy import func
+        
+        query = select(func.count(FairnessAssessment.id))
         
         if user_id:
-            query = query.filter(FairnessAssessment.created_by == user_id)
+            query = query.where(FairnessAssessment.created_by == user_id)
         if organization_id:
-            query = query.filter(FairnessAssessment.organization_id == organization_id)
+            query = query.where(FairnessAssessment.organization_id == organization_id)
         if status:
-            query = query.filter(FairnessAssessment.status == status)
+            query = query.where(FairnessAssessment.status == status)
         
-        return query.count()
+        result = await db.execute(query)
+        return result.scalar() or 0
     
-    def update_assessment(self, db: Session, assessment_id: UUID, assessment_data: FairnessAssessmentUpdate) -> Optional[FairnessAssessment]:
+    async def update_assessment(self, db: AsyncSession, assessment_id: UUID, assessment_data: FairnessAssessmentUpdate) -> Optional[FairnessAssessment]:
         """Update a fairness assessment."""
-        assessment = db.query(FairnessAssessment).filter(FairnessAssessment.id == assessment_id).first()
+        result = await db.execute(select(FairnessAssessment).where(FairnessAssessment.id == assessment_id))
+        assessment = result.scalar_one_or_none()
         if not assessment:
             return None
         
@@ -127,16 +134,17 @@ class FairnessAssessmentService:
             for field, value in update_data.items():
                 setattr(assessment, field, value)
             
-            db.commit()
-            db.refresh(assessment)
+            await db.commit()
+            await db.refresh(assessment)
             
             logger.info(f"Updated fairness assessment {assessment_id}")
         
         return assessment
     
-    def delete_assessment(self, db: Session, assessment_id: UUID) -> bool:
+    async def delete_assessment(self, db: AsyncSession, assessment_id: UUID) -> bool:
         """Delete a fairness assessment."""
-        assessment = db.query(FairnessAssessment).filter(FairnessAssessment.id == assessment_id).first()
+        result = await db.execute(select(FairnessAssessment).where(FairnessAssessment.id == assessment_id))
+        assessment = result.scalar_one_or_none()
         if not assessment:
             return False
         
@@ -147,13 +155,13 @@ class FairnessAssessmentService:
             except Exception as e:
                 logger.warning(f"Failed to cancel execution job for assessment {assessment_id}: {e}")
         
-        db.delete(assessment)
-        db.commit()
+        await db.delete(assessment)
+        await db.commit()
         
         logger.info(f"Deleted fairness assessment {assessment_id}")
         return True
     
-    def execute_assessment(self, db: Session, execution_request: FairnessAssessmentExecutionRequest, user_id: UUID, organization_id: UUID) -> FairnessAssessment:
+    async def execute_assessment(self, db: AsyncSession, execution_request: FairnessAssessmentExecutionRequest, user_id: UUID, organization_id: UUID) -> FairnessAssessment:
         """Execute a fairness assessment."""
         assessment = self.get_assessment(db, execution_request.assessment_id)
         if not assessment:
@@ -201,8 +209,8 @@ class FairnessAssessmentService:
         assessment.execution_job_id = job.id
         assessment.status = FairnessAssessmentStatus.RUNNING
         assessment.started_at = datetime.utcnow()
-        db.commit()
-        db.refresh(assessment)
+        await db.commit()
+        await db.refresh(assessment)
         
         logger.info(f"Started fairness assessment {assessment_id} with job {job.id}")
         return assessment
@@ -245,7 +253,7 @@ class FairnessAssessmentService:
         
         return errors
     
-    def process_wizard_step(self, db: Session, wizard_data: FairnessAssessmentConfigurationWizard, user_id: UUID, organization_id: UUID, session_data: Dict[str, Any]) -> FairnessAssessmentWizardResponse:
+    async def process_wizard_step(self, db: AsyncSession, wizard_data: FairnessAssessmentConfigurationWizard, user_id: UUID, organization_id: UUID, session_data: Dict[str, Any]) -> FairnessAssessmentWizardResponse:
         """Process a step in the configuration wizard."""
         # Validate current step
         errors = self.wizard_step_validation(wizard_data)
@@ -317,7 +325,7 @@ class FairnessAssessmentService:
             current_configuration=step_data
         )
     
-    def generate_report(self, db: Session, report_request: FairnessReportRequest) -> FairnessReport:
+    async def generate_report(self, db: AsyncSession, report_request: FairnessReportRequest) -> FairnessReport:
         """Generate a fairness report."""
         assessment = self.get_assessment(db, report_request.assessment_id)
         if not assessment:
@@ -366,9 +374,9 @@ class FairnessAssessmentService:
             generated_by="auto"
         )
         
-        db.add(report)
-        db.commit()
-        db.refresh(report)
+        await db.add(report)
+        await db.commit()
+        await db.refresh(report)
         
         # TODO: Generate actual report files (PDF, HTML, etc.)
         # This would involve using a report generation service
@@ -494,20 +502,32 @@ class FairnessAssessmentService:
             ]
         }
     
-    def get_assessment_statistics(self, db: Session, organization_id: Optional[UUID] = None) -> Dict[str, Any]:
+    async def get_assessment_statistics(self, db: AsyncSession, organization_id: Optional[UUID] = None) -> Dict[str, Any]:
         """Get fairness assessment statistics."""
-        query = db.query(FairnessAssessment)
+        from sqlalchemy import func
+        
+        # Get total count
+        total_query = select(func.count(FairnessAssessment.id))
         if organization_id:
-            query = query.filter(FairnessAssessment.organization_id == organization_id)
+            total_query = total_query.where(FairnessAssessment.organization_id == organization_id)
+        total_result = await db.execute(total_query)
+        total_assessments = total_result.scalar() or 0
         
-        total_assessments = query.count()
-        
+        # Get status counts
         status_counts = {}
         for status in FairnessAssessmentStatus:
-            status_counts[status.value] = query.filter(FairnessAssessment.status == status).count()
+            status_query = select(func.count(FairnessAssessment.id)).where(FairnessAssessment.status == status)
+            if organization_id:
+                status_query = status_query.where(FairnessAssessment.organization_id == organization_id)
+            status_result = await db.execute(status_query)
+            status_counts[status.value] = status_result.scalar() or 0
         
         # Average fairness score for completed assessments
-        completed_assessments = query.filter(FairnessAssessment.status == FairnessAssessmentStatus.COMPLETED).all()
+        completed_query = select(FairnessAssessment).where(FairnessAssessment.status == FairnessAssessmentStatus.COMPLETED)
+        if organization_id:
+            completed_query = completed_query.where(FairnessAssessment.organization_id == organization_id)
+        completed_result = await db.execute(completed_query)
+        completed_assessments = completed_result.scalars().all()
         avg_fairness_score = None
         if completed_assessments:
             scores = [assessment.overall_fairness_score for assessment in completed_assessments if assessment.overall_fairness_score]

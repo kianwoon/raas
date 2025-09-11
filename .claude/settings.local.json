@@ -19,7 +19,12 @@
       "Bash(npx tsc:*)",
       "Bash(npm install:*)",
       "Bash(alembic revision:*)",
-      "Bash(export:*)"
+      "Bash(export:*)",
+      "Bash(sips:*)",
+      "Bash(convert:*)",
+      "Bash(magick:*)",
+      "Bash(sed:*)",
+      "Bash(npm run dev:*)"
     ],
     "deny": [],
     "ask": []

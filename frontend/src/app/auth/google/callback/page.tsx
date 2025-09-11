@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { storeAuthTokens, storeUserData } from '@/lib/auth';
 
 export default function AuthCallbackPage() {
   const [status, setStatus] = useState('processing');
@@ -45,10 +46,11 @@ export default function AuthCallbackPage() {
         const data = await response.json();
         
         // Store authentication state and tokens
-        localStorage.setItem('access_token', data.access_token);
-        localStorage.setItem('refresh_token', data.refresh_token);
-        localStorage.setItem('isAuthenticated', 'true');
-        localStorage.setItem('user', JSON.stringify(data.user));
+        storeAuthTokens({
+          access_token: data.access_token,
+          refresh_token: data.refresh_token
+        });
+        storeUserData(data.user);
         
         // Dispatch event to update UI components
         window.dispatchEvent(new Event('authStateChange'));

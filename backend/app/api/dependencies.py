@@ -105,15 +105,34 @@ async def get_current_organization(
     db: AsyncSession = Depends(get_db),
 ) -> Organization:
     """Get current user's organization."""
-    if not current_user.organization_id:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User does not belong to any organization"
-        )
-    
     from sqlalchemy import select
-    result = await db.execute(select(Organization).where(Organization.id == current_user.organization_id))
-    organization = result.scalar_one_or_none()
+    import uuid
+    
+    # If user doesn't have an organization_id, try to find or create one
+    if not current_user.organization_id:
+        # First, check if there are any existing organizations
+        result = await db.execute(select(Organization).limit(1))
+        organization = result.scalar_one_or_none()
+        
+        if not organization:
+            # Create a default organization
+            organization = Organization(
+                id=uuid.uuid4(),
+                name=f"{current_user.username}'s Organization",
+                description="Default organization created automatically",
+                is_active=True,
+                is_verified=False
+            )
+            db.add(organization)
+            await db.flush()
+        
+        # Update the user with the organization_id
+        current_user.organization_id = organization.id
+        await db.flush()
+    else:
+        # User has organization_id, fetch the organization
+        result = await db.execute(select(Organization).where(Organization.id == current_user.organization_id))
+        organization = result.scalar_one_or_none()
     
     if not organization:
         raise HTTPException(

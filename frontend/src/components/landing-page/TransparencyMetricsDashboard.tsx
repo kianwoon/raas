@@ -93,14 +93,14 @@ export function TransparencyMetricsDashboard({ statistics }: StatisticsProps) {
         
         <div className="bg-purple-50 rounded-lg p-5 text-center">
           <div className="text-3xl font-bold text-purple-700 mb-2">
-            {Object.keys(statistics.domain_distribution).length}
+            {Object.keys(statistics.domain_distribution || {}).length}
           </div>
           <div className="text-purple-600 font-medium">Domains Covered</div>
         </div>
         
         <div className="bg-yellow-50 rounded-lg p-5 text-center">
           <div className="text-3xl font-bold text-yellow-700 mb-2">
-            {statistics.status_distribution.approved || 0}
+            {statistics.status_distribution?.approved || 0}
           </div>
           <div className="text-yellow-600 font-medium">Approved Models</div>
         </div>

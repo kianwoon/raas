@@ -8,7 +8,7 @@ RUN apk add --no-cache inotify-tools
 
 # Install dependencies based on the preferred package manager
 COPY package.json package-lock.json* ./
-RUN npm ci
+RUN npm ci --legacy-peer-deps
 
 # Create non-root user for development
 RUN addgroup -g 1001 -S nodejs && \

@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useState, Fragment, useEffect, useRef } from 'react';
+import { signOut, isAuthenticated as checkAuth, getUserData, storeUserData, storeAuthTokens } from '@/lib/auth';
 
 export function Navigation() {
   const [isOpen, setIsOpen] = useState(false);
@@ -15,20 +16,11 @@ export function Navigation() {
   // Check authentication state from localStorage on mount and when it changes
   useEffect(() => {
     const checkAuthState = () => {
-      const authStatus = localStorage.getItem('isAuthenticated');
-      const userData = localStorage.getItem('user');
+      const authStatus = checkAuth();
+      const userData = getUserData();
       
-      setIsAuthenticated(authStatus === 'true');
-      if (userData && authStatus === 'true') {
-        try {
-          setUser(JSON.parse(userData));
-        } catch (error) {
-          console.error('Error parsing user data:', error);
-          setUser(null);
-        }
-      } else {
-        setUser(null);
-      }
+      setIsAuthenticated(authStatus);
+      setUser(userData);
     };
 
     // Check initial auth state
@@ -184,16 +176,14 @@ export function Navigation() {
       if (authMode === 'register') {
         console.log('Registering user:', { email, name });
         // Simulate successful registration
-        localStorage.setItem('isAuthenticated', 'true');
-        localStorage.setItem('user', JSON.stringify({ email, name }));
+        storeUserData({ email, name });
         setIsAuthenticated(true);
         setShowAuthModal(false);
         window.dispatchEvent(new Event('authStateChange'));
       } else {
         console.log('Logging in user:', { email });
         // Simulate successful login
-        localStorage.setItem('isAuthenticated', 'true');
-        localStorage.setItem('user', JSON.stringify({ email }));
+        storeUserData({ email });
         setIsAuthenticated(true);
         setShowAuthModal(false);
         window.dispatchEvent(new Event('authStateChange'));
@@ -235,8 +225,7 @@ export function Navigation() {
       
       // Simulate successful GitHub sign-in
       setTimeout(() => {
-        localStorage.setItem('isAuthenticated', 'true');
-        localStorage.setItem('user', JSON.stringify({ email: 'user@example.com', name: 'GitHub User' }));
+        storeUserData({ email: 'user@example.com', name: 'GitHub User' });
         setIsAuthenticated(true);
         setShowAuthModal(false);
         window.dispatchEvent(new Event('authStateChange'));
@@ -397,15 +386,21 @@ export function Navigation() {
                       </Link>
                       <hr className="my-2" />
                       <button 
-                        onClick={() => {
-                          localStorage.removeItem('isAuthenticated');
-                          localStorage.removeItem('access_token');
-                          localStorage.removeItem('refresh_token');
-                          localStorage.removeItem('user');
-                          setIsAuthenticated(false);
-                          setUser(null);
-                          setOpenDropdown(null);
-                          window.dispatchEvent(new Event('authStateChange'));
+                        onClick={async () => {
+                          try {
+                            await signOut();
+                            setIsAuthenticated(false);
+                            setUser(null);
+                            setOpenDropdown(null);
+                            // Redirect to home page
+                            window.location.href = '/';
+                          } catch (error) {
+                            console.error('Sign out failed:', error);
+                            setIsAuthenticated(false);
+                            setUser(null);
+                            setOpenDropdown(null);
+                            window.location.href = '/';
+                          }
                         }}
                         className="block w-full text-left px-4 py-2 hover:bg-gray-50 text-sm text-red-600"
                       >

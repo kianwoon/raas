@@ -35,6 +35,7 @@ class Organization(Base):
     
     # Relationships
     model_cards = relationship("ModelCard", back_populates="organization")
+    users = relationship("User", back_populates="organization_rel")
     
     def __repr__(self):
         return f"<Organization(id={self.id}, name='{self.name}', is_active={self.is_active})>"

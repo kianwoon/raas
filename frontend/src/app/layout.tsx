@@ -34,8 +34,20 @@ export const metadata: Metadata = {
     follow: true,
   },
   icons: {
-    icon: "/favicon.ico",
-    apple: "/apple-icon.png",
+    icon: [
+      { url: "/favicon.png", sizes: "48x48", type: "image/png" },
+      { url: "/favicon_io/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon_io/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+    ],
+    apple: [
+      { url: "/favicon_io/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+    other: [
+      {
+        rel: "manifest",
+        url: "/favicon_io/site.webmanifest",
+      },
+    ],
   },
 };
 
@@ -45,7 +57,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" data-scroll-behavior="smooth">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >

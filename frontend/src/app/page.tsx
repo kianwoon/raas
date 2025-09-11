@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -24,12 +25,51 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Only run on client side to avoid server-side rendering issues
+    if (typeof window === 'undefined') {
+      return;
+    }
+
     const fetchData = async () => {
       try {
+        console.log('Starting to fetch landing page data...');
+        console.log('Window location:', window.location.href);
+        console.log('API URL from env:', process.env.NEXT_PUBLIC_API_URL);
+        console.log('User agent:', navigator.userAgent);
+        
         // Use sample data for now, can be changed to use real data by setting use_sample_data to false
         const useSampleData = true;
         
-        // Fetch all data in parallel
+        // Fetch all data in parallel with individual error handling
+        console.log('Fetching landing page data in parallel...');
+        
+        const fetchPromises = [
+          landingPageApi.getFeaturedModelCards({ limit: 3, use_sample_data: useSampleData }).catch(err => {
+            console.error('Failed to fetch model cards:', err);
+            return [];
+          }),
+          landingPageApi.getFairnessScoreDistribution({ use_sample_data: useSampleData }).catch(err => {
+            console.error('Failed to fetch fairness distribution:', err);
+            return {};
+          }),
+          landingPageApi.getModelCardStatistics({ use_sample_data: useSampleData }).catch(err => {
+            console.error('Failed to fetch statistics:', err);
+            return {};
+          }),
+          landingPageApi.getComplianceFrameworks({ limit: 4, use_sample_data: useSampleData }).catch(err => {
+            console.error('Failed to fetch compliance frameworks:', err);
+            return [];
+          }),
+          landingPageApi.getEducationalContent({ use_sample_data: useSampleData }).catch(err => {
+            console.error('Failed to fetch educational content:', err);
+            return { guides: [], tutorials: [], use_cases: [] };
+          }),
+          landingPageApi.getRecentReports({ limit: 4, use_sample_data: useSampleData }).catch(err => {
+            console.error('Failed to fetch recent reports:', err);
+            return [];
+          })
+        ];
+        
         const [
           modelCardsResponse,
           fairnessDistributionResponse,
@@ -37,15 +77,9 @@ export default function Home() {
           complianceFrameworksResponse,
           educationalContentResponse,
           recentReportsResponse
-        ] = await Promise.all([
-          landingPageApi.getFeaturedModelCards({ limit: 3, use_sample_data: useSampleData }),
-          landingPageApi.getFairnessScoreDistribution({ use_sample_data: useSampleData }),
-          landingPageApi.getModelCardStatistics({ use_sample_data: useSampleData }),
-          landingPageApi.getComplianceFrameworks({ limit: 4, use_sample_data: useSampleData }),
-          landingPageApi.getEducationalContent({ use_sample_data: useSampleData }),
-          landingPageApi.getRecentReports({ limit: 4, use_sample_data: useSampleData })
-        ]);
+        ] = await Promise.all(fetchPromises);
         
+        console.log('All data fetched successfully');
         setModelCards(modelCardsResponse);
         setFairnessDistribution(fairnessDistributionResponse);
         setStatistics(statisticsResponse);
@@ -54,6 +88,11 @@ export default function Home() {
         setRecentReports(recentReportsResponse);
       } catch (error) {
         console.error('Error fetching landing page data:', error);
+        console.error('Error details:', {
+          message: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : 'No stack trace',
+          error: error
+        });
         setError(`Failed to load data: ${error instanceof Error ? error.message : 'Unknown error'}`);
       } finally {
         setLoading(false);
@@ -66,7 +105,7 @@ export default function Home() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
       </div>
     );
   }

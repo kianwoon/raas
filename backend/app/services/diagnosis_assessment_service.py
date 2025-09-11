@@ -1,8 +1,8 @@
 from typing import List, Optional, Dict, Any, Union
 from uuid import UUID
 from datetime import datetime, timedelta
-from sqlalchemy.orm import Session
-from sqlalchemy import and_, or_, func, desc
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import and_, or_, func, desc, select
 from app.models.diagnosis_assessment import (
     DiagnosisAssessment, 
     DiagnosisMetric, 
@@ -39,7 +39,7 @@ class DiagnosisAssessmentService:
     def __init__(self):
         self.job_service = JobService()
         
-    def create_assessment(self, db: Session, assessment_data: DiagnosisAssessmentCreate, user_id: UUID, organization_id: UUID) -> DiagnosisAssessment:
+    async def create_assessment(self, db: AsyncSession, assessment_data: DiagnosisAssessmentCreate, user_id: UUID, organization_id: UUID) -> DiagnosisAssessment:
         """Create a new diagnosis assessment."""
         try:
             # Create assessment
@@ -70,33 +70,34 @@ class DiagnosisAssessmentService:
             )
             
             db.add(assessment)
-            db.commit()
-            db.refresh(assessment)
+            await db.commit()
+            await db.refresh(assessment)
             
             logger.info(f"Created diagnosis assessment {assessment.id}", assessment_id=assessment.id)
             return assessment
             
         except Exception as e:
-            db.rollback()
+            await db.rollback()
             logger.error(f"Failed to create diagnosis assessment: {e}", exc_info=True)
             raise
     
-    def get_assessment(self, db: Session, assessment_id: UUID) -> Optional[DiagnosisAssessment]:
+    async def get_assessment(self, db: AsyncSession, assessment_id: UUID) -> Optional[DiagnosisAssessment]:
         """Get a diagnosis assessment by ID."""
-        return db.query(DiagnosisAssessment).filter(DiagnosisAssessment.id == assessment_id).first()
+        result = await db.execute(select(DiagnosisAssessment).where(DiagnosisAssessment.id == assessment_id))
+        return result.scalar_one_or_none()
     
-    def get_assessments(self, db: Session, user_id: UUID, organization_id: UUID, 
+    async def get_assessments(self, db: AsyncSession, user_id: UUID, organization_id: UUID, 
                        status: Optional[DiagnosisAssessmentStatus] = None,
                        skip: int = 0, limit: int = 100,
                        sort_by: str = "created_at", sort_desc: bool = True) -> List[DiagnosisAssessment]:
         """Get diagnosis assessments with filtering and pagination."""
-        query = db.query(DiagnosisAssessment).filter(
+        query = select(DiagnosisAssessment).where(
             or_(DiagnosisAssessment.created_by == user_id, 
                 DiagnosisAssessment.organization_id == organization_id)
         )
         
         if status:
-            query = query.filter(DiagnosisAssessment.status == status)
+            query = query.where(DiagnosisAssessment.status == status)
         
         # Sorting
         if sort_desc:
@@ -104,26 +105,29 @@ class DiagnosisAssessmentService:
         else:
             query = query.order_by(getattr(DiagnosisAssessment, sort_by))
         
-        return query.offset(skip).limit(limit).all()
+        query = query.offset(skip).limit(limit)
+        result = await db.execute(query)
+        return result.scalars().all()
     
-    def count_assessments(self, db: Session, user_id: UUID, organization_id: UUID, 
+    async def count_assessments(self, db: AsyncSession, user_id: UUID, organization_id: UUID, 
                           status: Optional[DiagnosisAssessmentStatus] = None) -> int:
         """Count diagnosis assessments with filtering."""
-        query = db.query(DiagnosisAssessment).filter(
+        query = select(func.count(DiagnosisAssessment.id)).where(
             or_(DiagnosisAssessment.created_by == user_id, 
                 DiagnosisAssessment.organization_id == organization_id)
         )
         
         if status:
-            query = query.filter(DiagnosisAssessment.status == status)
+            query = query.where(DiagnosisAssessment.status == status)
         
-        return query.count()
+        result = await db.execute(query)
+        return result.scalar() or 0
     
-    def update_assessment(self, db: Session, assessment_id: UUID, 
+    async def update_assessment(self, db: AsyncSession, assessment_id: UUID, 
                          assessment_data: DiagnosisAssessmentUpdate) -> Optional[DiagnosisAssessment]:
         """Update a diagnosis assessment."""
         try:
-            assessment = self.get_assessment(db, assessment_id)
+            assessment = await self.get_assessment(db, assessment_id)
             if not assessment:
                 return None
             
@@ -136,21 +140,21 @@ class DiagnosisAssessmentService:
             for field, value in update_data.items():
                 setattr(assessment, field, value)
             
-            db.commit()
-            db.refresh(assessment)
+            await db.commit()
+            await db.refresh(assessment)
             
             logger.info(f"Updated diagnosis assessment {assessment_id}", assessment_id=assessment_id)
             return assessment
             
         except Exception as e:
-            db.rollback()
+            await db.rollback()
             logger.error(f"Failed to update diagnosis assessment {assessment_id}: {e}", exc_info=True)
             raise
     
-    def delete_assessment(self, db: Session, assessment_id: UUID) -> bool:
+    async def delete_assessment(self, db: AsyncSession, assessment_id: UUID) -> bool:
         """Delete a diagnosis assessment."""
         try:
-            assessment = self.get_assessment(db, assessment_id)
+            assessment = await self.get_assessment(db, assessment_id)
             if not assessment:
                 return False
             
@@ -158,22 +162,22 @@ class DiagnosisAssessmentService:
             if assessment.status == DiagnosisAssessmentStatus.RUNNING:
                 raise ValueError("Cannot delete running assessment")
             
-            db.delete(assessment)
-            db.commit()
+            await db.delete(assessment)
+            await db.commit()
             
             logger.info(f"Deleted diagnosis assessment {assessment_id}", assessment_id=assessment_id)
             return True
             
         except Exception as e:
-            db.rollback()
+            await db.rollback()
             logger.error(f"Failed to delete diagnosis assessment {assessment_id}: {e}", exc_info=True)
             raise
     
-    def execute_assessment(self, db: Session, execution_request: DiagnosisAssessmentExecutionRequest, 
+    async def execute_assessment(self, db: AsyncSession, execution_request: DiagnosisAssessmentExecutionRequest, 
                           user_id: UUID, organization_id: UUID) -> DiagnosisAssessment:
         """Execute a diagnosis assessment."""
         try:
-            assessment = self.get_assessment(db, execution_request.assessment_id)
+            assessment = await self.get_assessment(db, execution_request.assessment_id)
             if not assessment:
                 raise ValueError("Assessment not found")
             
@@ -209,7 +213,7 @@ class DiagnosisAssessmentService:
             if execution_request.execution_parameters:
                 job_parameters.update(execution_request.execution_parameters)
             
-            job = self.job_service.create_job(
+            job = await self.job_service.create_job(
                 db=db,
                 job_type=JobType.ASSESSMENT,
                 name=f"Diagnosis Assessment: {assessment.name}",
@@ -226,8 +230,8 @@ class DiagnosisAssessmentService:
             assessment.execution_job_id = job.id
             assessment.started_at = datetime.utcnow()
             
-            db.commit()
-            db.refresh(assessment)
+            await db.commit()
+            await db.refresh(assessment)
             
             logger.info(f"Started execution of diagnosis assessment {assessment_id}", 
                        assessment_id=assessment_id, job_id=job.id)
@@ -235,11 +239,11 @@ class DiagnosisAssessmentService:
             return assessment
             
         except Exception as e:
-            db.rollback()
+            await db.rollback()
             logger.error(f"Failed to execute diagnosis assessment {assessment_id}: {e}", exc_info=True)
             raise
     
-    def process_wizard_step(self, db: Session, wizard_data: DiagnosisAssessmentConfigurationWizard, 
+    async def process_wizard_step(self, db: AsyncSession, wizard_data: DiagnosisAssessmentConfigurationWizard, 
                            user_id: UUID, organization_id: UUID, session_data: Dict[str, Any]) -> DiagnosisAssessmentWizardResponse:
         """Process a step in the diagnosis assessment configuration wizard."""
         try:
@@ -272,7 +276,7 @@ class DiagnosisAssessmentService:
                     response.step = step + 1
                 else:
                     # Complete wizard
-                    assessment = self._create_assessment_from_wizard(db, form_data, user_id, organization_id)
+                    assessment = await self._create_assessment_from_wizard(db, form_data, user_id, organization_id)
                     response.assessment_id = assessment.id
                     response.completed = True
                     response.step = 5
@@ -284,17 +288,17 @@ class DiagnosisAssessmentService:
             elif action == "save":
                 if session_data.get("assessment_id"):
                     # Update existing assessment
-                    assessment = self.update_assessment(db, session_data["assessment_id"], 
+                    assessment = await self.update_assessment(db, session_data["assessment_id"], 
                                                        DiagnosisAssessmentUpdate(**form_data))
                 else:
                     # Create new assessment
-                    assessment = self._create_assessment_from_wizard(db, form_data, user_id, organization_id)
+                    assessment = await self._create_assessment_from_wizard(db, form_data, user_id, organization_id)
                     session_data["assessment_id"] = assessment.id
                     response.assessment_id = assessment.id
                     
             elif action == "execute" and len(validation_errors) == 0:
                 if not session_data.get("assessment_id"):
-                    assessment = self._create_assessment_from_wizard(db, form_data, user_id, organization_id)
+                    assessment = await self._create_assessment_from_wizard(db, form_data, user_id, organization_id)
                     session_data["assessment_id"] = assessment.id
                     response.assessment_id = assessment.id
                 
@@ -302,7 +306,7 @@ class DiagnosisAssessmentService:
                 execution_request = DiagnosisAssessmentExecutionRequest(
                     assessment_id=session_data["assessment_id"]
                 )
-                self.execute_assessment(db, execution_request, user_id, organization_id)
+                await self.execute_assessment(db, execution_request, user_id, organization_id)
                 response.completed = True
             
             # Generate preview data
@@ -314,10 +318,10 @@ class DiagnosisAssessmentService:
             logger.error(f"Failed to process wizard step {step}: {e}", exc_info=True)
             raise
     
-    def generate_report(self, db: Session, report_request: DiagnosisReportRequest) -> DiagnosisReport:
+    async def generate_report(self, db: AsyncSession, report_request: DiagnosisReportRequest) -> DiagnosisReport:
         """Generate a diagnosis assessment report."""
         try:
-            assessment = self.get_assessment(db, report_request.assessment_id)
+            assessment = await self.get_assessment(db, report_request.assessment_id)
             if not assessment:
                 raise ValueError("Assessment not found")
             
@@ -336,7 +340,7 @@ class DiagnosisAssessmentService:
             )
             
             # Generate report content
-            report_content = self._generate_report_content(db, assessment, report_request)
+            report_content = await self._generate_report_content(db, assessment, report_request)
             report.executive_summary = report_content["executive_summary"]
             report.technical_summary = report_content["technical_summary"]
             report.key_findings = report_content["key_findings"]
@@ -345,7 +349,7 @@ class DiagnosisAssessmentService:
             
             # Generate visualization data
             if report_request.include_charts:
-                visualization_data = self._generate_visualization_data(db, assessment)
+                visualization_data = await self._generate_visualization_data(db, assessment)
                 report.charts = visualization_data["charts"]
                 report.dashboard_config = visualization_data["dashboard_config"]
             
@@ -354,8 +358,8 @@ class DiagnosisAssessmentService:
             report.model_card_updates = model_card_updates
             
             db.add(report)
-            db.commit()
-            db.refresh(report)
+            await db.commit()
+            await db.refresh(report)
             
             # Update assessment
             assessment.report_generated = True
@@ -363,7 +367,7 @@ class DiagnosisAssessmentService:
             assessment.executive_summary = report.executive_summary
             assessment.technical_summary = report.technical_summary
             
-            db.commit()
+            await db.commit()
             
             logger.info(f"Generated diagnosis report {report.id} for assessment {assessment.id}", 
                        report_id=report.id, assessment_id=assessment.id)
@@ -371,69 +375,83 @@ class DiagnosisAssessmentService:
             return report
             
         except Exception as e:
-            db.rollback()
+            await db.rollback()
             logger.error(f"Failed to generate diagnosis report: {e}", exc_info=True)
             raise
     
-    def get_assessment_statistics(self, db: Session, organization_id: UUID) -> DiagnosisStatistics:
+    async def get_assessment_statistics(self, db: AsyncSession, organization_id: UUID) -> DiagnosisStatistics:
         """Get diagnosis assessment statistics."""
         try:
             # Basic counts
-            total_assessments = db.query(DiagnosisAssessment).filter(
+            total_query = select(func.count(DiagnosisAssessment.id)).where(
                 DiagnosisAssessment.organization_id == organization_id
-            ).count()
+            )
+            total_result = await db.execute(total_query)
+            total_assessments = total_result.scalar() or 0
             
-            completed_assessments = db.query(DiagnosisAssessment).filter(
+            completed_query = select(func.count(DiagnosisAssessment.id)).where(
                 and_(
                     DiagnosisAssessment.organization_id == organization_id,
                     DiagnosisAssessment.status == DiagnosisAssessmentStatus.COMPLETED
                 )
-            ).count()
+            )
+            completed_result = await db.execute(completed_query)
+            completed_assessments = completed_result.scalar() or 0
             
-            failed_assessments = db.query(DiagnosisAssessment).filter(
+            failed_query = select(func.count(DiagnosisAssessment.id)).where(
                 and_(
                     DiagnosisAssessment.organization_id == organization_id,
                     DiagnosisAssessment.status == DiagnosisAssessmentStatus.FAILED
                 )
-            ).count()
+            )
+            failed_result = await db.execute(failed_query)
+            failed_assessments = failed_result.scalar() or 0
             
             # Average performance score
-            avg_score = db.query(func.avg(DiagnosisAssessment.overall_performance_score)).filter(
+            avg_score_query = select(func.avg(DiagnosisAssessment.overall_performance_score)).where(
                 and_(
                     DiagnosisAssessment.organization_id == organization_id,
                     DiagnosisAssessment.status == DiagnosisAssessmentStatus.COMPLETED,
                     DiagnosisAssessment.overall_performance_score.isnot(None)
                 )
-            ).scalar()
+            )
+            avg_score_result = await db.execute(avg_score_query)
+            avg_score = avg_score_result.scalar()
             
             # Assessments with drift
-            drift_assessments = db.query(DiagnosisAssessment).filter(
+            drift_query = select(func.count(DiagnosisAssessment.id)).where(
                 and_(
                     DiagnosisAssessment.organization_id == organization_id,
                     DiagnosisAssessment.drift_detected == True
                 )
-            ).count()
+            )
+            drift_result = await db.execute(drift_query)
+            drift_assessments = drift_result.scalar() or 0
             
             # Average duration
-            avg_duration = db.query(func.avg(
+            avg_duration_query = select(func.avg(
                 func.extract('epoch', DiagnosisAssessment.completed_at - DiagnosisAssessment.started_at)
-            )).filter(
+            )).where(
                 and_(
                     DiagnosisAssessment.organization_id == organization_id,
                     DiagnosisAssessment.status == DiagnosisAssessmentStatus.COMPLETED,
                     DiagnosisAssessment.started_at.isnot(None),
                     DiagnosisAssessment.completed_at.isnot(None)
                 )
-            ).scalar()
+            )
+            avg_duration_result = await db.execute(avg_duration_query)
+            avg_duration = avg_duration_result.scalar()
             
             # Popular diagnosis types
             diagnosis_types = []
             if total_assessments > 0:
                 # Count diagnosis types
                 type_counts = {}
-                assessments = db.query(DiagnosisAssessment).filter(
+                assessments_query = select(DiagnosisAssessment).where(
                     DiagnosisAssessment.organization_id == organization_id
-                ).all()
+                )
+                assessments_result = await db.execute(assessments_query)
+                assessments = assessments_result.scalars().all()
                 
                 for assessment in assessments:
                     for diagnosis_type in assessment.diagnosis_types or []:
@@ -444,9 +462,11 @@ class DiagnosisAssessmentService:
                 diagnosis_types = [t[0] for t in sorted_types[:5]]
             
             # Recent assessments
-            recent_assessments = db.query(DiagnosisAssessment).filter(
+            recent_query = select(DiagnosisAssessment).where(
                 DiagnosisAssessment.organization_id == organization_id
-            ).order_by(desc(DiagnosisAssessment.created_at)).limit(5).all()
+            ).order_by(desc(DiagnosisAssessment.created_at)).limit(5)
+            recent_result = await db.execute(recent_query)
+            recent_assessments = recent_result.scalars().all()
             
             return DiagnosisStatistics(
                 total_assessments=total_assessments,
@@ -572,11 +592,11 @@ class DiagnosisAssessmentService:
         
         return errors
     
-    def _create_assessment_from_wizard(self, db: Session, form_data: Dict[str, Any], 
+    async def _create_assessment_from_wizard(self, db: AsyncSession, form_data: Dict[str, Any], 
                                       user_id: UUID, organization_id: UUID) -> DiagnosisAssessment:
         """Create assessment from wizard form data."""
         assessment_data = DiagnosisAssessmentCreate(**form_data)
-        return self.create_assessment(db, assessment_data, user_id, organization_id)
+        return await self.create_assessment(db, assessment_data, user_id, organization_id)
     
     def _generate_wizard_preview(self, form_data: Dict[str, Any]) -> Dict[str, Any]:
         """Generate wizard preview data."""
@@ -591,23 +611,29 @@ class DiagnosisAssessmentService:
             "confidence_level": form_data.get("confidence_level", 0.95)
         }
     
-    def _generate_report_content(self, db: Session, assessment: DiagnosisAssessment, 
+    async def _generate_report_content(self, db: AsyncSession, assessment: DiagnosisAssessment, 
                                 report_request: DiagnosisReportRequest) -> Dict[str, Any]:
         """Generate report content."""
         # Get metrics
-        metrics = db.query(DiagnosisMetric).filter(
+        metrics_query = select(DiagnosisMetric).where(
             DiagnosisMetric.assessment_id == assessment.id
-        ).all()
+        )
+        metrics_result = await db.execute(metrics_query)
+        metrics = metrics_result.scalars().all()
         
         # Get drift results
-        drift_results = db.query(DriftDetection).filter(
+        drift_query = select(DriftDetection).where(
             DriftDetection.assessment_id == assessment.id
-        ).all()
+        )
+        drift_result = await db.execute(drift_query)
+        drift_results = drift_result.scalars().all()
         
         # Get explainability results
-        explainability_results = db.query(ExplainabilityResult).filter(
+        explainability_query = select(ExplainabilityResult).where(
             ExplainabilityResult.assessment_id == assessment.id
-        ).all()
+        )
+        explainability_result = await db.execute(explainability_query)
+        explainability_results = explainability_result.scalars().all()
         
         # Generate executive summary
         executive_summary = self._generate_executive_summary(assessment, metrics, drift_results, explainability_results)
@@ -802,7 +828,7 @@ class DiagnosisAssessmentService:
             ]
         }
     
-    def _generate_visualization_data(self, db: Session, assessment: DiagnosisAssessment) -> Dict[str, Any]:
+    async def _generate_visualization_data(self, db: AsyncSession, assessment: DiagnosisAssessment) -> Dict[str, Any]:
         """Generate visualization data."""
         # This would generate data for various charts and visualizations
         # For now, return empty structure

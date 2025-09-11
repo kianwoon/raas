@@ -1,6 +1,6 @@
 from typing import List, Optional, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, status, Query, Body
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
 from app.api.dependencies import get_db, get_current_user, get_current_organization
 from app.models.user import User
@@ -34,16 +34,16 @@ logger = structlog.get_logger()
 router = APIRouter()
 
 @router.post("/diagnosis-assessments", response_model=DiagnosisAssessmentResponse, status_code=status.HTTP_201_CREATED)
-def create_diagnosis_assessment(
+async def create_diagnosis_assessment(
     assessment_data: DiagnosisAssessmentCreate,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
     current_organization: Organization = Depends(get_current_organization)
 ):
     """Create a new diagnosis assessment."""
     try:
         service = DiagnosisAssessmentService()
-        assessment = service.create_assessment(db, assessment_data, current_user.id, current_organization.id)
+        assessment = await service.create_assessment(db, assessment_data, current_user.id, current_organization.id)
         return DiagnosisAssessmentResponse.from_orm(assessment)
     except Exception as e:
         logger.error(f"Failed to create diagnosis assessment: {e}", exc_info=True)
@@ -53,13 +53,13 @@ def create_diagnosis_assessment(
         )
 
 @router.get("/diagnosis-assessments", response_model=DiagnosisAssessmentListResponse)
-def get_diagnosis_assessments(
+async def get_diagnosis_assessments(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
     status: Optional[DiagnosisAssessmentStatus] = Query(None, description="Filter by status"),
     sort_by: str = Query("created_at", description="Sort field"),
     sort_desc: bool = Query(True, description="Sort descending"),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
     current_organization: Organization = Depends(get_current_organization)
 ):
@@ -68,7 +68,7 @@ def get_diagnosis_assessments(
         service = DiagnosisAssessmentService()
         
         # Get assessments
-        assessments = service.get_assessments(
+        assessments = await service.get_assessments(
             db=db,
             user_id=current_user.id,
             organization_id=current_organization.id,
@@ -80,7 +80,7 @@ def get_diagnosis_assessments(
         )
         
         # Get total count
-        total = service.count_assessments(
+        total = await service.count_assessments(
             db=db,
             user_id=current_user.id,
             organization_id=current_organization.id,
@@ -104,16 +104,16 @@ def get_diagnosis_assessments(
         )
 
 @router.get("/diagnosis-assessments/{assessment_id}", response_model=DiagnosisAssessmentResponse)
-def get_diagnosis_assessment(
+async def get_diagnosis_assessment(
     assessment_id: UUID,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
     current_organization: Organization = Depends(get_current_organization)
 ):
     """Get a specific diagnosis assessment by ID."""
     try:
         service = DiagnosisAssessmentService()
-        assessment = service.get_assessment(db, assessment_id)
+        assessment = await service.get_assessment(db, assessment_id)
         
         if not assessment:
             raise HTTPException(
@@ -139,17 +139,17 @@ def get_diagnosis_assessment(
         )
 
 @router.put("/diagnosis-assessments/{assessment_id}", response_model=DiagnosisAssessmentResponse)
-def update_diagnosis_assessment(
+async def update_diagnosis_assessment(
     assessment_id: UUID,
     assessment_data: DiagnosisAssessmentUpdate,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
     current_organization: Organization = Depends(get_current_organization)
 ):
     """Update a diagnosis assessment."""
     try:
         service = DiagnosisAssessmentService()
-        assessment = service.get_assessment(db, assessment_id)
+        assessment = await service.get_assessment(db, assessment_id)
         
         if not assessment:
             raise HTTPException(
@@ -164,7 +164,7 @@ def update_diagnosis_assessment(
                 detail="Access denied to this assessment"
             )
         
-        updated_assessment = service.update_assessment(db, assessment_id, assessment_data)
+        updated_assessment = await service.update_assessment(db, assessment_id, assessment_data)
         if not updated_assessment:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -182,16 +182,16 @@ def update_diagnosis_assessment(
         )
 
 @router.delete("/diagnosis-assessments/{assessment_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_diagnosis_assessment(
+async def delete_diagnosis_assessment(
     assessment_id: UUID,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
     current_organization: Organization = Depends(get_current_organization)
 ):
     """Delete a diagnosis assessment."""
     try:
         service = DiagnosisAssessmentService()
-        assessment = service.get_assessment(db, assessment_id)
+        assessment = await service.get_assessment(db, assessment_id)
         
         if not assessment:
             raise HTTPException(
@@ -206,7 +206,7 @@ def delete_diagnosis_assessment(
                 detail="Access denied to this assessment"
             )
         
-        success = service.delete_assessment(db, assessment_id)
+        success = await service.delete_assessment(db, assessment_id)
         if not success:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -222,17 +222,17 @@ def delete_diagnosis_assessment(
         )
 
 @router.post("/diagnosis-assessments/{assessment_id}/execute", response_model=DiagnosisAssessmentResponse)
-def execute_diagnosis_assessment(
+async def execute_diagnosis_assessment(
     assessment_id: UUID,
     execution_request: DiagnosisAssessmentExecutionRequest = Body(None),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
     current_organization: Organization = Depends(get_current_organization)
 ):
     """Execute a diagnosis assessment."""
     try:
         service = DiagnosisAssessmentService()
-        assessment = service.get_assessment(db, assessment_id)
+        assessment = await service.get_assessment(db, assessment_id)
         
         if not assessment:
             raise HTTPException(
@@ -253,7 +253,7 @@ def execute_diagnosis_assessment(
         elif execution_request.assessment_id != assessment_id:
             execution_request.assessment_id = assessment_id
         
-        executed_assessment = service.execute_assessment(db, execution_request, current_user.id, current_organization.id)
+        executed_assessment = await service.execute_assessment(db, execution_request, current_user.id, current_organization.id)
         return DiagnosisAssessmentResponse.from_orm(executed_assessment)
     except HTTPException:
         raise
@@ -270,9 +270,9 @@ def execute_diagnosis_assessment(
         )
 
 @router.post("/diagnosis-assessments/wizard", response_model=DiagnosisAssessmentWizardResponse)
-def process_wizard_step(
+async def process_wizard_step(
     wizard_data: DiagnosisAssessmentConfigurationWizard,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
     current_organization: Organization = Depends(get_current_organization)
 ):
@@ -283,7 +283,7 @@ def process_wizard_step(
         # In a real implementation, you would store session data in a cache or session storage
         session_data = {}  # This would be retrieved from session storage
         
-        response = service.process_wizard_step(db, wizard_data, current_user.id, current_organization.id, session_data)
+        response = await service.process_wizard_step(db, wizard_data, current_user.id, current_organization.id, session_data)
         
         # Store updated session data (in a real implementation)
         # session_storage.update(session_data)
@@ -297,17 +297,17 @@ def process_wizard_step(
         )
 
 @router.post("/diagnosis-assessments/{assessment_id}/reports", response_model=DiagnosisReportResponse)
-def generate_diagnosis_report(
+async def generate_diagnosis_report(
     assessment_id: UUID,
     report_request: DiagnosisReportRequest,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
     current_organization: Organization = Depends(get_current_organization)
 ):
     """Generate a diagnosis assessment report."""
     try:
         service = DiagnosisAssessmentService()
-        assessment = service.get_assessment(db, assessment_id)
+        assessment = await service.get_assessment(db, assessment_id)
         
         if not assessment:
             raise HTTPException(
@@ -325,7 +325,7 @@ def generate_diagnosis_report(
         # Set assessment_id in report_request
         report_request.assessment_id = assessment_id
         
-        report = service.generate_report(db, report_request)
+        report = await service.generate_report(db, report_request)
         
         return DiagnosisReportResponse(
             report_id=report.id,
@@ -350,16 +350,16 @@ def generate_diagnosis_report(
         )
 
 @router.get("/diagnosis-assessments/{assessment_id}/metrics")
-def get_diagnosis_metrics(
+async def get_diagnosis_metrics(
     assessment_id: UUID,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
     current_organization: Organization = Depends(get_current_organization)
 ):
     """Get detailed diagnosis metrics for an assessment."""
     try:
         service = DiagnosisAssessmentService()
-        assessment = service.get_assessment(db, assessment_id)
+        assessment = await service.get_assessment(db, assessment_id)
         
         if not assessment:
             raise HTTPException(
@@ -413,16 +413,16 @@ def get_diagnosis_metrics(
         )
 
 @router.get("/diagnosis-assessments/{assessment_id}/drift")
-def get_drift_results(
+async def get_drift_results(
     assessment_id: UUID,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
     current_organization: Organization = Depends(get_current_organization)
 ):
     """Get drift detection results for an assessment."""
     try:
         service = DiagnosisAssessmentService()
-        assessment = service.get_assessment(db, assessment_id)
+        assessment = await service.get_assessment(db, assessment_id)
         
         if not assessment:
             raise HTTPException(
@@ -475,16 +475,16 @@ def get_drift_results(
         )
 
 @router.get("/diagnosis-assessments/{assessment_id}/explainability")
-def get_explainability_results(
+async def get_explainability_results(
     assessment_id: UUID,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
     current_organization: Organization = Depends(get_current_organization)
 ):
     """Get explainability results for an assessment."""
     try:
         service = DiagnosisAssessmentService()
-        assessment = service.get_assessment(db, assessment_id)
+        assessment = await service.get_assessment(db, assessment_id)
         
         if not assessment:
             raise HTTPException(
@@ -532,9 +532,9 @@ def get_explainability_results(
         )
 
 @router.post("/diagnosis-assessments/compare", response_model=DiagnosisComparisonResponse)
-def compare_diagnosis_assessments(
+async def compare_diagnosis_assessments(
     assessment_ids: List[UUID] = Body(..., description="List of assessment IDs to compare"),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
     current_organization: Organization = Depends(get_current_organization)
 ):
@@ -545,7 +545,7 @@ def compare_diagnosis_assessments(
         # Get assessments
         assessments = []
         for assessment_id in assessment_ids:
-            assessment = service.get_assessment(db, assessment_id)
+            assessment = await service.get_assessment(db, assessment_id)
             if not assessment:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
@@ -625,15 +625,15 @@ def compare_diagnosis_assessments(
         )
 
 @router.get("/diagnosis-assessments/statistics")
-def get_diagnosis_assessment_statistics(
-    db: Session = Depends(get_db),
+async def get_diagnosis_assessment_statistics(
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
     current_organization: Organization = Depends(get_current_organization)
 ):
     """Get diagnosis assessment statistics."""
     try:
         service = DiagnosisAssessmentService()
-        stats = service.get_assessment_statistics(db, current_organization.id)
+        stats = await service.get_assessment_statistics(db, current_organization.id)
         return stats
     except Exception as e:
         logger.error(f"Failed to get diagnosis assessment statistics: {e}", exc_info=True)

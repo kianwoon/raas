@@ -29,8 +29,16 @@ export const landingPageApi = {
     limit?: number;
     use_sample_data?: boolean;
   }) {
-    const response = await apiClient.get(`${API_URL}/compliance-frameworks`, { params });
-    return response.data;
+    console.log('Fetching compliance frameworks with params:', params);
+    console.log('API URL:', `${API_URL}/compliance-frameworks`);
+    try {
+      const response = await apiClient.get(`${API_URL}/compliance-frameworks`, { params });
+      console.log('Compliance frameworks response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to fetch compliance frameworks:', error);
+      throw error;
+    }
   },
 
   async getRecentReports(params?: {

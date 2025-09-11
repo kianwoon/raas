@@ -1,6 +1,7 @@
-from sqlalchemy import Column, String, Boolean, DateTime, Enum, Text
+from sqlalchemy import Column, String, Boolean, DateTime, Enum, Text, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
+from sqlalchemy.orm import relationship
 import uuid
 from enum import Enum as PyEnum
 
@@ -37,7 +38,8 @@ class User(Base):
     is_verified = Column(Boolean, default=False, nullable=False)
     
     # Organization information
-    organization = Column(String(255), nullable=True)
+    organization_id = Column(UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=True)
+    organization = Column(String(255), nullable=True)  # Keep for backward compatibility
     department = Column(String(255), nullable=True)
     job_title = Column(String(255), nullable=True)
     
@@ -53,6 +55,9 @@ class User(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now(), nullable=True)
     last_login_at = Column(DateTime(timezone=True), nullable=True)
+    
+    # Relationships
+    organization_rel = relationship("Organization", back_populates="users", foreign_keys=[organization_id])
     
     def __repr__(self):
         return f"<User(id={self.id}, email={self.email}, username={self.username})>"

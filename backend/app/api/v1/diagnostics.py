@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query, Body
+from fastapi import APIRouter, Depends, HTTPException, Query, Body
+from fastapi import status
 from sqlalchemy.orm import Session
 from uuid import UUID
 from typing import List, Optional, Dict, Any
@@ -53,7 +54,7 @@ async def run_diagnostics(
         service = DiagnosisAssessmentService()
         
         # Create assessment
-        assessment = service.create_assessment(db, assessment_data, current_user.id, current_organization.id)
+        assessment = await service.create_assessment(db, assessment_data, current_user.id, current_organization.id)
         
         # Execute assessment immediately
         execution_request = DiagnosisAssessmentExecutionRequest(
@@ -62,7 +63,7 @@ async def run_diagnostics(
             priority=diagnostic_config.get("priority", 0)
         )
         
-        executed_assessment = service.execute_assessment(db, execution_request, current_user.id, current_organization.id)
+        executed_assessment = await service.execute_assessment(db, execution_request, current_user.id, current_organization.id)
         
         return DiagnosisAssessmentResponse.from_orm(executed_assessment)
         
@@ -90,7 +91,7 @@ async def get_diagnostics_runs(
         service = DiagnosisAssessmentService()
         
         # Get assessments
-        assessments = service.get_assessments(
+        assessments = await service.get_assessments(
             db=db,
             user_id=current_user.id,
             organization_id=current_organization.id,
@@ -102,7 +103,7 @@ async def get_diagnostics_runs(
         )
         
         # Get total count
-        total = service.count_assessments(
+        total = await service.count_assessments(
             db=db,
             user_id=current_user.id,
             organization_id=current_organization.id,
@@ -136,7 +137,7 @@ async def get_diagnostics_run(
     """Get a specific diagnostic run by ID."""
     try:
         service = DiagnosisAssessmentService()
-        assessment = service.get_assessment(db, run_id)
+        assessment = await service.get_assessment(db, run_id)
         
         if not assessment:
             raise HTTPException(
@@ -172,7 +173,7 @@ async def get_diagnostics_results(
     """Get comprehensive diagnostic run results including metrics, drift, and explainability."""
     try:
         service = DiagnosisAssessmentService()
-        assessment = service.get_assessment(db, run_id)
+        assessment = await service.get_assessment(db, run_id)
         
         if not assessment:
             raise HTTPException(
@@ -300,7 +301,7 @@ async def generate_diagnostics_report(
     """Generate a comprehensive diagnostic report."""
     try:
         service = DiagnosisAssessmentService()
-        assessment = service.get_assessment(db, run_id)
+        assessment = await service.get_assessment(db, run_id)
         
         if not assessment:
             raise HTTPException(
@@ -326,7 +327,7 @@ async def generate_diagnostics_report(
             template_version=report_config.get("template_version")
         )
         
-        report = service.generate_report(db, report_request)
+        report = await service.generate_report(db, report_request)
         
         return DiagnosisReportResponse(
             report_id=report.id,
@@ -351,7 +352,7 @@ async def get_diagnostic_templates():
     """Get available diagnostic templates."""
     try:
         service = DiagnosisAssessmentService()
-        templates = service.get_templates()
+        templates = await service.get_templates()
         return {
             "templates": templates,
             "total": len(templates)
@@ -373,7 +374,7 @@ async def get_diagnostics_statistics(
     """Get diagnostic statistics and analytics."""
     try:
         service = DiagnosisAssessmentService()
-        stats = service.get_assessment_statistics(db, current_organization.id)
+        stats = await service.get_assessment_statistics(db, current_organization.id)
         return stats
     except Exception as e:
         logger.error(f"Failed to get diagnostic statistics: {e}", exc_info=True)

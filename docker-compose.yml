@@ -53,7 +53,7 @@ services:
       - OIDC_CLIENT_ID=${OIDC_CLIENT_ID:-}
       - OIDC_CLIENT_SECRET=${OIDC_CLIENT_SECRET:-}
       - ENVIRONMENT=development
-      - BACKEND_CORS_ORIGINS=["http://localhost:3000", "http://localhost:3001", "http://web:3000"]
+      - BACKEND_CORS_ORIGINS=["http://localhost:3000", "http://localhost:3001", "http://web:3000", "http://172.19.0.6:3000"]
     ports:
       - "8000:8000"
     volumes:
@@ -75,8 +75,8 @@ services:
       dockerfile: Dockerfile
     container_name: raas-web
     environment:
-      - NEXT_PUBLIC_API_URL=http://host.docker.internal:8000
       - NEXT_PUBLIC_ENVIRONMENT=development
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
       - CHOKIDAR_USEPOLLING=true
       - WATCHPACK_POLLING=true
     ports:

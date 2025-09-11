@@ -1,6 +1,7 @@
 from typing import Dict, Any, List
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 
 from app.core.database import get_db
 from app.crud.model_card import model_card
@@ -11,8 +12,8 @@ router = APIRouter()
 
 
 @router.get("/model-cards", response_model=List[Dict[str, Any]])
-def get_featured_model_cards(
-    db: Session = Depends(get_db),
+async def get_featured_model_cards(
+    db: AsyncSession = Depends(get_db),
     limit: int = Query(3, ge=1, le=10),
     use_sample_data: bool = Query(True)
 ):
@@ -67,8 +68,8 @@ def get_featured_model_cards(
 
 
 @router.get("/fairness-distribution", response_model=Dict[str, int])
-def get_fairness_score_distribution(
-    db: Session = Depends(get_db),
+async def get_fairness_score_distribution(
+    db: AsyncSession = Depends(get_db),
     use_sample_data: bool = Query(True)
 ):
     """
@@ -79,8 +80,8 @@ def get_fairness_score_distribution(
 
 
 @router.get("/statistics", response_model=Dict[str, Any])
-def get_model_card_statistics(
-    db: Session = Depends(get_db),
+async def get_model_card_statistics(
+    db: AsyncSession = Depends(get_db),
     use_sample_data: bool = Query(True)
 ):
     """
@@ -91,8 +92,8 @@ def get_model_card_statistics(
 
 
 @router.get("/compliance-frameworks", response_model=List[Dict[str, Any]])
-def get_compliance_frameworks(
-    db: Session = Depends(get_db),
+async def get_compliance_frameworks(
+    db: AsyncSession = Depends(get_db),
     limit: int = Query(4, ge=1, le=10),
     use_sample_data: bool = Query(True)
 ):
@@ -141,8 +142,8 @@ def get_compliance_frameworks(
 
 
 @router.get("/reports", response_model=List[Dict[str, Any]])
-def get_recent_reports(
-    db: Session = Depends(get_db),
+async def get_recent_reports(
+    db: AsyncSession = Depends(get_db),
     limit: int = Query(4, ge=1, le=10),
     use_sample_data: bool = Query(False)
 ):
@@ -187,8 +188,8 @@ def get_recent_reports(
 
 
 @router.get("/educational-content", response_model=Dict[str, Any])
-def get_educational_content(
-    db: Session = Depends(get_db),
+async def get_educational_content(
+    db: AsyncSession = Depends(get_db),
     use_sample_data: bool = Query(True)
 ):
     """

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { storeAuthTokens, storeUserData } from '@/lib/auth';
 
 export default function AuthSuccessPage() {
   const [status, setStatus] = useState('processing');
@@ -27,14 +28,15 @@ export default function AuthSuccessPage() {
         }
         
         // Store authentication state
-        localStorage.setItem('access_token', accessToken);
-        localStorage.setItem('refresh_token', refreshToken);
-        localStorage.setItem('isAuthenticated', 'true');
-        localStorage.setItem('user', JSON.stringify({
+        storeAuthTokens({
+          access_token: accessToken,
+          refresh_token: refreshToken
+        });
+        storeUserData({
           email,
           name,
           picture
-        }));
+        });
         
         // Dispatch event to update UI components
         window.dispatchEvent(new Event('authStateChange'));
