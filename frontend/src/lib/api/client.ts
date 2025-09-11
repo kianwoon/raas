@@ -116,4 +116,6 @@ apiClient.interceptors.response.use(
   }
 );
 
+// Also export as named export for compatibility
+export { apiClient };
 export default apiClient;

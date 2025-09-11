@@ -42,6 +42,13 @@ from .diagnosis_assessment import (
     DiagnosisReport,
     InferenceMonitoring
 )
+from .api_key import (
+    ApiKey,
+    ApiKeyEnvironment,
+    ApiKeyPermission,
+    ApiKeyAction,
+    ApiKeyActivity
+)
 
 __all__ = [
     "Organization",
@@ -82,4 +89,9 @@ __all__ = [
     "ExplainabilityResult",
     "DiagnosisReport",
     "InferenceMonitoring",
+    "ApiKey",
+    "ApiKeyEnvironment",
+    "ApiKeyPermission",
+    "ApiKeyAction",
+    "ApiKeyActivity",
 ]

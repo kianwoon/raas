@@ -2,6 +2,8 @@
  * Authentication utility functions for consistent auth state management
  */
 
+import { useState, useEffect } from 'react';
+
 export interface AuthTokens {
   access_token: string;
   refresh_token: string;
@@ -100,6 +102,55 @@ export const isAuthenticated = (): boolean => {
   if (typeof window === 'undefined') return false;
   
   return localStorage.getItem('isAuthenticated') === 'true';
+};
+
+/**
+ * React hook for authentication state management
+ */
+export const useAuth = () => {
+  const [isAuthenticatedState, setIsAuthenticated] = useState(false);
+  const [userData, setUserData] = useState<UserData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const checkAuth = () => {
+      if (typeof window !== 'undefined') {
+        const authStatus = localStorage.getItem('isAuthenticated') === 'true';
+        const user = getUserData();
+        
+        setIsAuthenticated(authStatus);
+        setUserData(user);
+        setLoading(false);
+      } else {
+        setLoading(false);
+      }
+    };
+
+    // Check auth state on mount
+    checkAuth();
+
+    // Listen for auth state changes
+    if (typeof window !== 'undefined') {
+      window.addEventListener('authStateChange', checkAuth);
+      window.addEventListener('storage', checkAuth);
+    }
+
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('authStateChange', checkAuth);
+        window.removeEventListener('storage', checkAuth);
+      }
+    };
+  }, []);
+
+  return {
+    isAuthenticated: isAuthenticatedState,
+    userData,
+    loading,
+    signOut,
+    getUserData,
+    getAuthTokens
+  };
 };
 
 /**

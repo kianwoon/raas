@@ -11,6 +11,7 @@ from app.api.v1.model_cards import router as model_cards_router
 from app.api.v1.jobs import router as jobs_router
 from app.api.v1.health import router as health_router
 from app.api.v1.fairness_assessments import router as fairness_assessments_router
+from app.api.v1.api_keys import router as api_keys_router
 
 api_router = APIRouter()
 
@@ -26,3 +27,4 @@ api_router.include_router(model_cards_router, prefix="/model-cards", tags=["mode
 api_router.include_router(jobs_router, tags=["jobs"])
 api_router.include_router(fairness_assessments_router, prefix="/fairness-assessments", tags=["fairness-assessments"])
 api_router.include_router(health_router, prefix="/health", tags=["health"])
+api_router.include_router(api_keys_router, prefix="/api-keys", tags=["api-keys"])
